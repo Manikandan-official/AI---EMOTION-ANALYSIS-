@@ -62,83 +62,13 @@ router.post('/', async (req, res) => {
 
   } catch (error) {
     console.error('Error saving emotion analysis:', error.message);
+    console.error('Stack:', error.stack);
+    console.error('Request body was:', req.body);
     res.status(500).json({
       success: false,
       message: 'Error saving emotion analysis',
-      error: error.message
-    });
-  }
-});
-
-/**
- * Get emotion analysis history for a patient
- * GET /api/emotion-analysis/:patientId
- */
-router.get('/:patientId', async (req, res) => {
-  try {
-    const { patientId } = req.params;
-    const { limit = 10, skip = 0 } = req.query;
-
-    // Fetch emotion analysis records sorted by newest first
-    const analyses = await SessionAnalysis.find({ patientId })
-      .sort({ timestamp: -1 })
-      .limit(parseInt(limit))
-      .skip(parseInt(skip));
-
-    // Get total count for pagination
-    const total = await SessionAnalysis.countDocuments({ patientId });
-
-    res.json({
-      success: true,
-      data: analyses,
-      pagination: {
-        total,
-        limit: parseInt(limit),
-        skip: parseInt(skip),
-        hasMore: parseInt(skip) + parseInt(limit) < total
-      }
-    });
-
-  } catch (error) {
-    console.error('Error fetching emotion analysis:', error.message);
-    res.status(500).json({
-      success: false,
-      message: 'Error fetching emotion analysis',
-      error: error.message
-    });
-  }
-});
-
-/**
- * Get latest emotion analysis for a patient
- * GET /api/emotion-analysis/:patientId/latest
- */
-router.get('/:patientId/latest', async (req, res) => {
-  try {
-    const { patientId } = req.params;
-
-    // Fetch the most recent analysis
-    const latest = await SessionAnalysis.findOne({ patientId })
-      .sort({ timestamp: -1 });
-
-    if (!latest) {
-      return res.status(404).json({
-        success: false,
-        message: 'No emotion analysis found for this patient'
-      });
-    }
-
-    res.json({
-      success: true,
-      data: latest
-    });
-
-  } catch (error) {
-    console.error('Error fetching latest emotion analysis:', error.message);
-    res.status(500).json({
-      success: false,
-      message: 'Error fetching latest emotion analysis',
-      error: error.message
+      error: error.message,
+      details: error.stack
     });
   }
 });
@@ -188,6 +118,79 @@ router.get('/doctor/all', async (req, res) => {
 });
 
 /**
+ * Get latest emotion analysis for a patient
+ * GET /api/emotion-analysis/:patientId/latest
+ */
+router.get('/:patientId/latest', async (req, res) => {
+  try {
+    const { patientId } = req.params;
+
+    // Fetch the most recent analysis
+    const latest = await SessionAnalysis.findOne({ patientId })
+      .sort({ timestamp: -1 });
+
+    if (!latest) {
+      return res.status(404).json({
+        success: false,
+        message: 'No emotion analysis found for this patient'
+      });
+    }
+
+    res.json({
+      success: true,
+      data: latest
+    });
+
+  } catch (error) {
+    console.error('Error fetching latest emotion analysis:', error.message);
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching latest emotion analysis',
+      error: error.message
+    });
+  }
+});
+
+/**
+ * Get emotion analysis history for a patient
+ * GET /api/emotion-analysis/:patientId
+ */
+router.get('/:patientId', async (req, res) => {
+  try {
+    const { patientId } = req.params;
+    const { limit = 10, skip = 0 } = req.query;
+
+    // Fetch emotion analysis records sorted by newest first
+    const analyses = await SessionAnalysis.find({ patientId })
+      .sort({ timestamp: -1 })
+      .limit(parseInt(limit))
+      .skip(parseInt(skip));
+
+    // Get total count for pagination
+    const total = await SessionAnalysis.countDocuments({ patientId });
+
+    res.json({
+      success: true,
+      data: analyses,
+      pagination: {
+        total,
+        limit: parseInt(limit),
+        skip: parseInt(skip),
+        hasMore: parseInt(skip) + parseInt(limit) < total
+      }
+    });
+
+  } catch (error) {
+    console.error('Error fetching emotion analysis:', error.message);
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching emotion analysis',
+      error: error.message
+    });
+  }
+});
+
+/**
  * Update emotion analysis with doctor review
  * PUT /api/emotion-analysis/:id/review
  */
@@ -218,6 +221,53 @@ router.put('/:id/review', async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Error updating analysis',
+      error: error.message
+    });
+  }
+});
+
+/**
+ * Create sample emotion analysis for testing
+ * POST /api/emotion-analysis/test/sample
+ */
+router.post('/test/sample', async (req, res) => {
+  try {
+    const sampleData = {
+      patientId: 'test-patient-001',
+      patientName: 'Test Patient',
+      emotion: 'happy',
+      emotionConfidence: 0.87,
+      analysisType: 'combined',
+      voiceTone: 'happy',
+      transcript: 'I am feeling good today!',
+      emotionHistory: [
+        { emotion: 'neutral', confidence: 0.65, timestamp: new Date(Date.now() - 2000) },
+        { emotion: 'happy', confidence: 0.82, timestamp: new Date(Date.now() - 1000) },
+        { emotion: 'happy', confidence: 0.87, timestamp: new Date() }
+      ],
+      recommendation: {
+        medication: 'No medication needed',
+        dosage: 'N/A',
+        advice: 'Continue with current routine'
+      }
+    };
+
+    const sessionAnalysis = new SessionAnalysis(sampleData);
+    const savedSession = await sessionAnalysis.save();
+
+    console.log('✓ Sample emotion analysis created for testing');
+
+    res.status(201).json({
+      success: true,
+      message: 'Sample emotion analysis created',
+      data: savedSession
+    });
+
+  } catch (error) {
+    console.error('Error creating sample data:', error.message);
+    res.status(500).json({
+      success: false,
+      message: 'Error creating sample data',
       error: error.message
     });
   }

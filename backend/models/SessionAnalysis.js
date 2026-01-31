@@ -74,4 +74,4 @@ const SessionSchema = new mongoose.Schema({
 SessionSchema.index({ patientId: 1, timestamp: -1 });
 SessionSchema.index({ timestamp: -1 });
 
-module.exports = mongoose.model('Session', SessionSchema);
+module.exports = mongoose.model('SessionAnalysis', SessionSchema);
